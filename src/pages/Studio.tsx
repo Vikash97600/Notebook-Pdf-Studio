@@ -53,6 +53,7 @@ import { ConvertDialog } from "@/components/studio/ConvertDialog";
 import { PreviewDialog } from "@/components/studio/PreviewDialog";
 import { OcrDialog } from "@/components/studio/OcrDialog";
 import type { OcrPageResult } from "@/lib/ocr";
+import type { PerspectiveQuad } from "@/lib/scanner";
 
 const SETTINGS_STORAGE_KEY = "nps-pdf-settings";
 const VIEW_STORAGE_KEY = "nps-view-mode";
@@ -98,11 +99,15 @@ function makeId(): string {
 function signatureOf(patch: {
   rotation: number;
   crop: { x: number; y: number; w: number; h: number } | null;
+  perspectiveQuad?: PerspectiveQuad | null;
   filters: ImageFilters;
   flipH: boolean;
   flipV: boolean;
 }): string {
-  return `${patch.rotation}|${patch.crop ? `${patch.crop.x},${patch.crop.y},${patch.crop.w},${patch.crop.h}` : "none"}|${patch.filters.brightness},${patch.filters.contrast},${patch.filters.saturation},${patch.filters.grayscale},${patch.filters.blur},${patch.filters.sharpen}|${patch.flipH ? 1 : 0},${patch.flipV ? 1 : 0}`;
+  const quadStr = patch.perspectiveQuad
+    ? `${patch.perspectiveQuad.tl.x.toFixed(3)},${patch.perspectiveQuad.tl.y.toFixed(3)}-${patch.perspectiveQuad.tr.x.toFixed(3)},${patch.perspectiveQuad.tr.y.toFixed(3)}-${patch.perspectiveQuad.br.x.toFixed(3)},${patch.perspectiveQuad.br.y.toFixed(3)}-${patch.perspectiveQuad.bl.x.toFixed(3)},${patch.perspectiveQuad.bl.y.toFixed(3)}`
+    : "none";
+  return `${patch.rotation}|${patch.crop ? `${patch.crop.x},${patch.crop.y},${patch.crop.w},${patch.crop.h}` : "none"}|${quadStr}|${patch.filters.brightness},${patch.filters.contrast},${patch.filters.saturation},${patch.filters.grayscale},${patch.filters.blur},${patch.filters.sharpen},${patch.filters.scanPreset || "none"}|${patch.flipH ? 1 : 0},${patch.flipV ? 1 : 0}`;
 }
 
 export default function Studio() {
@@ -222,6 +227,7 @@ export default function Studio() {
           const processed = renderProcessedImage(el, {
             rotation: img.rotation,
             crop: img.crop,
+            perspectiveQuad: img.perspectiveQuad,
             filters: img.filters,
             maxSide: 320,
             flipH: img.flipH,
@@ -367,6 +373,7 @@ export default function Studio() {
       patch: {
         rotation: number;
         crop: { x: number; y: number; w: number; h: number } | null;
+        perspectiveQuad?: PerspectiveQuad | null;
         filters: ImageFilters;
         flipH: boolean;
         flipV: boolean;
@@ -385,6 +392,7 @@ export default function Studio() {
           const processed = renderProcessedImage(el, {
             rotation: patch.rotation,
             crop: patch.crop,
+            perspectiveQuad: patch.perspectiveQuad,
             filters: patch.filters,
             maxSide: 320,
             flipH: patch.flipH,

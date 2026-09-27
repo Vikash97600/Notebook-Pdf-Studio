@@ -80,6 +80,7 @@ export async function generatePdfFromImages(
     const options: RenderOptions = {
       rotation: item.rotation,
       crop: item.crop,
+      perspectiveQuad: item.perspectiveQuad,
       filters: item.filters,
       maxSide: qualityLimit(settings.quality),
       flipH: item.flipH,

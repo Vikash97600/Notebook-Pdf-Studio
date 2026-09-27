@@ -1,5 +1,14 @@
 import type { OcrPageResult } from "./ocr";
 import {
+  applyBwThresholdFilter,
+  applyMagicColorFilter,
+  applyShadowRemovalFilter,
+  isDefaultQuad,
+  warpPerspectiveCanvas,
+  type PerspectiveQuad,
+  type ScanFilterMode,
+} from "./scanner";
+import {
   MM_PER_PT,
   MARGIN_MM,
   resolvePageMm,
@@ -40,6 +49,7 @@ export interface ImageFilters {
   grayscale: boolean;
   blur: number; // px
   sharpen: number; // 0 = off
+  scanPreset?: ScanFilterMode;
 }
 
 export const NEUTRAL_FILTERS: ImageFilters = {
@@ -49,6 +59,7 @@ export const NEUTRAL_FILTERS: ImageFilters = {
   grayscale: false,
   blur: 0,
   sharpen: 0,
+  scanPreset: "none",
 };
 
 export function isNeutralFilters(f: ImageFilters): boolean {
@@ -58,7 +69,8 @@ export function isNeutralFilters(f: ImageFilters): boolean {
     f.saturation === NEUTRAL_FILTERS.saturation &&
     !f.grayscale &&
     f.blur === 0 &&
-    f.sharpen === 0
+    f.sharpen === 0 &&
+    (!f.scanPreset || f.scanPreset === "none")
   );
 }
 
@@ -167,6 +179,7 @@ export function createThumbnail(source: HTMLImageElement, maxSide = 320): string
 export interface RenderOptions {
   rotation: number; // degrees, multiples of 90
   crop: { x: number; y: number; w: number; h: number } | null; // 0..1 fractions
+  perspectiveQuad?: PerspectiveQuad | null;
   filters: ImageFilters;
   maxSide: number | null; // cap for longest edge (quality preset)
   flipH?: boolean;
@@ -174,17 +187,31 @@ export interface RenderOptions {
 }
 
 /**
- * Apply rotation, flip, crop and filters to an image element and return a
- * JPEG data URL. The source bitmap is drawn at full resolution into a
- * rotated context, then the whole context is scaled to the (possibly capped)
- * output size — so the result fills the canvas exactly for all four angles.
+ * Apply perspective warp, rotation, flip, crop, and filters (including CamScanner presets)
+ * to an image element and return a JPEG data URL.
  */
 export function renderProcessedImage(
   img: HTMLImageElement,
   opts: RenderOptions,
 ): ProcessedImageResult {
-  const iw = img.naturalWidth;
-  const ih = img.naturalHeight;
+  // Step 1: Perspective warp if non-default quadrilateral is specified
+  let sourceElement: HTMLImageElement | HTMLCanvasElement = img;
+  let iw = img.naturalWidth;
+  let ih = img.naturalHeight;
+
+  if (opts.perspectiveQuad && !isDefaultQuad(opts.perspectiveQuad)) {
+    const rawCanvas = document.createElement("canvas");
+    rawCanvas.width = iw;
+    rawCanvas.height = ih;
+    const rawCtx = rawCanvas.getContext("2d");
+    if (rawCtx) {
+      rawCtx.drawImage(img, 0, 0);
+      const warpedCanvas = warpPerspectiveCanvas(rawCanvas, opts.perspectiveQuad);
+      sourceElement = warpedCanvas;
+      iw = warpedCanvas.width;
+      ih = warpedCanvas.height;
+    }
+  }
 
   const crop = opts.crop
     ? {
@@ -224,8 +251,17 @@ export function renderProcessedImage(
   ctx.scale(opts.flipH ? -1 : 1, opts.flipV ? -1 : 1);
   ctx.rotate((quarter * 90 * Math.PI) / 180);
   ctx.filter = buildFilterString(opts.filters);
-  ctx.drawImage(img, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+  ctx.drawImage(sourceElement, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
   ctx.restore();
+
+  // Apply CamScanner-style enhancement presets if selected
+  if (opts.filters.scanPreset === "magic-color") {
+    applyMagicColorFilter(canvas);
+  } else if (opts.filters.scanPreset === "bw-threshold") {
+    applyBwThresholdFilter(canvas);
+  } else if (opts.filters.scanPreset === "shadow-remove") {
+    applyShadowRemovalFilter(canvas);
+  }
 
   if (opts.filters.sharpen > 0) {
     applySharpen(canvas, ctx, opts.filters.sharpen);

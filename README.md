@@ -8,6 +8,11 @@ notes, assignments, and scans looking clean.
 
 - **Upload or capture** — drag & drop, file picker, or camera capture on mobile
   (JPG, JPEG, PNG, WEBP, GIF, BMP; up to 25 MB per image)
+- **Document Scanner & Perspective Deskew** — auto-detect notebook page corners or manually drag 4 corner pins with live homography warp to un-skew and flatten angled mobile photos
+- **CamScanner-Style Magic Filters** —
+  - *Magic Color*: Whitens yellowish paper and boosts ink contrast
+  - *B&W Clean Threshold*: Clean binary monochrome thresholding for pencil/pen scans
+  - *Shadow / Glare Fix*: Equalizes uneven room lighting and removes phone/hand shadows
 - **Edit each page** — rotate, flip, crop (Free/1:1/4:3/16:9/A4), brightness,
   contrast, saturation, grayscale, sharpen, blur, reset
 - **Organize pages** — drag to reorder, move up/down, duplicate, remove,

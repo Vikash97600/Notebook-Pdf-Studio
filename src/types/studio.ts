@@ -1,6 +1,6 @@
 import type { ImageFilters } from "@/lib/images";
-
 import type { OcrPageResult } from "@/lib/ocr";
+import type { PerspectiveQuad } from "@/lib/scanner";
 
 /** One page in the workspace: the original file plus its edits. */
 export interface StudioImage {
@@ -12,6 +12,7 @@ export interface StudioImage {
   height: number;
   rotation: number; // 0 | 90 | 180 | 270
   crop: { x: number; y: number; w: number; h: number } | null; // 0..1 fractions
+  perspectiveQuad?: PerspectiveQuad | null;
   filters: ImageFilters;
   flipH: boolean;
   flipV: boolean;

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.log
+# generated PDFs and temp artifacts from local testing
+*.pdf
+tmp/
+.vite/

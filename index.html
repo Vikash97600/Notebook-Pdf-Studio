@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6f1e6" />
+  <meta name="description"
+    content="Notebook PDF Studio — a student-friendly studio that combines, edits and converts your images into a professional PDF, entirely in your browser. Your files never leave your device." />
+  <meta property="og:title" content="Notebook PDF Studio — Images to PDF, right in your browser" />
+  <meta property="og:description"
+    content="Combine, edit, organize and convert images into a professional PDF — processed locally, nothing is uploaded." />
+  <meta property="og:type" content="website" />
+  <title>Notebook PDF Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("nps-theme");
+        if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

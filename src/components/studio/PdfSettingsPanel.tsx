@@ -16,7 +16,8 @@ import {
   type QualityPreset,
   type TextAlignment,
 } from "@/lib/pdf-meta";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles } from "lucide-react";
+import { OCR_LANGUAGES } from "@/lib/ocr";
 
 interface PdfSettingsPanelProps {
   settings: PdfSettings;
@@ -269,6 +270,49 @@ export function PdfSettingsPanel({ settings, onChange }: PdfSettingsPanelProps) 
             </button>
           ))}
         </div>
+      </fieldset>
+
+      {/* Searchable PDF (OCR Text Layer) */}
+      <fieldset className="space-y-3 rounded-lg border p-3 bg-card/60">
+        <legend className="flex items-center gap-1.5 px-1 text-sm font-medium">
+          <Sparkles className="size-3.5 text-primary" />
+          Searchable PDF (OCR)
+        </legend>
+        <div className="flex items-center justify-between gap-2">
+          <div className="space-y-0.5">
+            <Label htmlFor="searchable-pdf-toggle" className="cursor-pointer">
+              Embed OCR text layer
+            </Label>
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              Allows selecting, copying, and searching (Ctrl+F) text inside the PDF.
+            </p>
+          </div>
+          <Switch
+            id="searchable-pdf-toggle"
+            checked={settings.embedSearchableText}
+            onCheckedChange={(checked) => onChange({ embedSearchableText: checked })}
+          />
+        </div>
+
+        {settings.embedSearchableText && (
+          <div className="space-y-1.5 pt-1 border-t">
+            <Label htmlFor="ocr-lang-select" className="text-xs">
+              Document language
+            </Label>
+            <select
+              id="ocr-lang-select"
+              value={settings.ocrLanguage || "eng"}
+              onChange={(e) => onChange({ ocrLanguage: e.target.value })}
+              className="w-full h-8 rounded-md border bg-background px-2 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {OCR_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </fieldset>
 
       {/* Page numbers */}

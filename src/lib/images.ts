@@ -1,3 +1,4 @@
+import type { OcrPageResult } from "./ocr";
 import {
   MM_PER_PT,
   MARGIN_MM,
@@ -28,6 +29,7 @@ export interface PdfDrawImage {
   /** Pixel dimensions of the (already rotated/cropped/filtered) bitmap. */
   width: number;
   height: number;
+  ocr?: OcrPageResult | null;
 }
 
 /** Styles applied to one image via the editor. */

@@ -12,6 +12,8 @@ notes, assignments, and scans looking clean.
   contrast, saturation, grayscale, sharpen, blur, reset
 - **Organize pages** — drag to reorder, move up/down, duplicate, remove,
   multi-select with bulk rotate/delete
+- **OCR & Text Extraction** — client-side OCR via `tesseract.js` (WASM/local), extract notes per page or batch all pages, edit extracted text, copy to clipboard, or export to Markdown (`.md`) & Text (`.txt`)
+- **Searchable PDF Generation** — embed an invisible selectable OCR text layer directly into generated PDFs for searching (`Ctrl+F`), text selection, and copy-paste in PDF readers
 - **Real PDF generation** — A4/A3/A5/Letter/Legal/Custom page sizes, portrait /
   landscape / auto orientation, margins, contain/cover/original/fit-to-page,
   four quality presets, custom background color
@@ -33,7 +35,8 @@ notes, assignments, and scans looking clean.
 
 - React 19 + TypeScript + Vite (frontend)
 - Tailwind CSS v4 + shadcn/ui components (notebook theme)
-- [jsPDF](https://github.com/parallax/jsPDF) — PDF generation
+- [jsPDF](https://github.com/parallax/jsPDF) — PDF generation & invisible OCR text embedding
+- [tesseract.js](https://github.com/naptha/tesseract.js) — in-browser OCR engine
 - [pdf.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) — PDF preview
 - Convex Auth — lightweight sign-in for the studio workspace
 - Lucide icons, Sonner toasts, Framer Motion (subtle motion only)

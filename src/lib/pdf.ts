@@ -1,3 +1,4 @@
+import { extractOcrFromImage, type OcrPageResult } from "./ocr";
 import { jsPDF } from "jspdf";
 import {
   MARGIN_MM,
@@ -63,7 +64,7 @@ export async function generatePdfFromImages(
 
   const total = images.length;
 
-  // Stage 1 — rasterise every image with its edits applied.
+  // Stage 1 — rasterise every image with its edits applied (and OCR if enabled).
   const rendered: PdfDrawImage[] = [];
   for (let i = 0; i < total; i++) {
     const item = images[i];
@@ -71,7 +72,7 @@ export async function generatePdfFromImages(
       stage: "preparing",
       index: i,
       total,
-      label: `Preparing image ${i + 1} of ${total}…`,
+      label: `Preparing page ${i + 1} of ${total}…`,
     });
     // Yield to the event loop so progress UI can repaint between images.
     await new Promise((r) => setTimeout(r, 0));
@@ -85,10 +86,30 @@ export async function generatePdfFromImages(
       flipV: item.flipV,
     };
     const processed = renderProcessedImage(el, options);
+
+    let ocr: OcrPageResult | null = item.ocrResult ?? null;
+    if (settings.embedSearchableText && !ocr) {
+      onStage({
+        stage: "preparing",
+        index: i,
+        total,
+        label: `Extracting searchable text on page ${i + 1} of ${total}…`,
+      });
+      try {
+        ocr = await extractOcrFromImage(
+          processed.dataUrl,
+          settings.ocrLanguage || "eng",
+        );
+      } catch (err) {
+        console.warn(`OCR skipped for page ${i + 1}`, err);
+      }
+    }
+
     rendered.push({
       dataUrl: processed.dataUrl,
       width: processed.width,
       height: processed.height,
+      ocr,
     });
   }
 
@@ -114,7 +135,7 @@ export async function generatePdfFromImages(
   };
 }
 
-/** Build the jsPDF document from rendered page bitmaps. */
+/** Build the jsPDF document from rendered page bitmaps and optional OCR text layer. */
 function buildPdfDocument(
   rendered: PdfDrawImage[],
   settings: PdfSettings,
@@ -171,6 +192,30 @@ function buildPdfDocument(
       );
     } catch (err) {
       console.error(`Failed to draw page ${index + 1}`, err);
+    }
+
+    // Embed invisible searchable text layer if OCR data exists.
+    if (image.ocr && image.ocr.words && image.ocr.words.length > 0) {
+      const scaleX = rect.w / Math.max(1, image.width);
+      const scaleY = rect.h / Math.max(1, image.height);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(0, 0, 0);
+
+      for (const word of image.ocr.words) {
+        if (!word.text || !word.text.trim()) continue;
+        const wx = rect.x + word.bbox.x0 * scaleX;
+        const wy = rect.y + word.bbox.y1 * scaleY;
+        const fontH = Math.max(4, (word.bbox.y1 - word.bbox.y0) * scaleY);
+        pdf.setFontSize(fontH);
+        try {
+          pdf.text(word.text, wx, wy, {
+            renderingMode: "invisible",
+            baseline: "alphabetic",
+          });
+        } catch {
+          /* ignore word render failure */
+        }
+      }
     }
 
     // Header / footer / page numbers sit inside the margin.

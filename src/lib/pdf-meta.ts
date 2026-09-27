@@ -52,9 +52,11 @@ export interface PdfSettings {
   subject: string;
   keywords: string;
   fileName: string;
+  embedSearchableText: boolean;
+  ocrLanguage: string;
 }
 
-export const PDF_SETTINGS_VERSION = 1;
+export const PDF_SETTINGS_VERSION = 2;
 
 export const DEFAULT_PDF_SETTINGS: PdfSettings = {
   pageSize: "A4",
@@ -77,6 +79,8 @@ export const DEFAULT_PDF_SETTINGS: PdfSettings = {
   subject: "",
   keywords: "",
   fileName: "notebook-to-pdf",
+  embedSearchableText: false,
+  ocrLanguage: "eng",
 };
 
 /** Page sizes in millimetres, portrait. */

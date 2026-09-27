@@ -31,6 +31,7 @@ import {
   Eye,
   FileDown,
   FilePlus2,
+  FileText,
   FolderOpen,
   List,
   LayoutGrid,
@@ -39,6 +40,7 @@ import {
   Pencil,
   RotateCw,
   SlidersHorizontal,
+  Sparkles,
   Square,
   Sun,
   Trash2,
@@ -49,6 +51,8 @@ import { ImageEditorDialog } from "@/components/studio/ImageEditorDialog";
 import { PdfSettingsPanel } from "@/components/studio/PdfSettingsPanel";
 import { ConvertDialog } from "@/components/studio/ConvertDialog";
 import { PreviewDialog } from "@/components/studio/PreviewDialog";
+import { OcrDialog } from "@/components/studio/OcrDialog";
+import type { OcrPageResult } from "@/lib/ocr";
 
 const SETTINGS_STORAGE_KEY = "nps-pdf-settings";
 const VIEW_STORAGE_KEY = "nps-view-mode";
@@ -114,11 +118,19 @@ export default function Studio() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrImageId, setOcrImageId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const addInputRef = useRef<HTMLInputElement>(null);
   const dragIndexRef = useRef<number | null>(null);
   const imagesRef = useRef<StudioImage[]>([]);
   imagesRef.current = images;
+
+  const handleUpdateImageOcr = useCallback((id: string, result: OcrPageResult) => {
+    setImages((prev) =>
+      prev.map((img) => (img.id === id ? { ...img, ocrResult: result } : img)),
+    );
+  }, []);
 
   // Persist PDF settings and view mode.
   useEffect(() => {
@@ -623,6 +635,19 @@ export default function Studio() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="min-h-[36px] gap-1.5 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+                    onClick={() => {
+                      setOcrImageId(images[0]?.id ?? null);
+                      setOcrOpen(true);
+                    }}
+                  >
+                    <Sparkles className="size-3.5" />
+                    Extract Notes (OCR)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="min-h-[36px]"
                     onClick={anySelected ? handleDeselectAll : handleSelectAll}
                   >
@@ -700,6 +725,10 @@ export default function Studio() {
                       onRemove={handleRemove}
                       onToggleSelect={handleToggleSelect}
                       onMove={handleMove}
+                      onOcr={(id) => {
+                        setOcrImageId(id);
+                        setOcrOpen(true);
+                      }}
                     />
                   ))}
                 </div>
@@ -731,12 +760,33 @@ export default function Studio() {
                         draggable={false}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{img.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium">{img.name}</p>
+                          {img.ocrResult && (
+                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              OCR
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {img.width} × {img.height} · {formatBytes(img.sizeBytes)}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-9"
+                          onClick={() => {
+                            setOcrImageId(img.id);
+                            setOcrOpen(true);
+                          }}
+                          aria-label={`Extract text for page ${index + 1}`}
+                          title="Extract text / OCR"
+                        >
+                          <FileText className="size-4" />
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
@@ -822,12 +872,12 @@ export default function Studio() {
         <div
           className="sticky bottom-0 z-30 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
         >
-          <div className="flex items-center gap-2 px-4 py-2">
+          <div className="flex items-center gap-1.5 px-3 py-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-[44px] flex-1"
+              className="min-h-[44px] flex-1 px-2 text-xs"
               onClick={() => addInputRef.current?.click()}
             >
               <FolderOpen className="size-4" />
@@ -837,7 +887,20 @@ export default function Studio() {
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-[44px] flex-1"
+              className="min-h-[44px] flex-1 px-2 text-xs"
+              onClick={() => {
+                setOcrImageId(images[0]?.id ?? null);
+                setOcrOpen(true);
+              }}
+            >
+              <Sparkles className="size-4 text-primary" />
+              OCR
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-[44px] flex-1 px-2 text-xs"
               onClick={openPreview}
             >
               <Eye className="size-4" />
@@ -846,7 +909,7 @@ export default function Studio() {
             <Button
               type="button"
               size="sm"
-              className="min-h-[44px] flex-1"
+              className="min-h-[44px] flex-1 px-2 text-xs"
               onClick={openConvert}
             >
               <FileDown className="size-4" />
@@ -916,6 +979,15 @@ export default function Studio() {
         fileName={pdfFileName(settings)}
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
+      />
+
+      {/* OCR & Notes Extraction Dialog */}
+      <OcrDialog
+        images={images}
+        selectedImageId={ocrImageId}
+        open={ocrOpen}
+        onClose={() => setOcrOpen(false)}
+        onUpdateImageOcr={handleUpdateImageOcr}
       />
 
       {isProcessing && (

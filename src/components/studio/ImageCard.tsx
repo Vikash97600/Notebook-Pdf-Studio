@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  FileText,
   Pencil,
   RotateCw,
   Trash2,
@@ -26,6 +27,7 @@ interface ImageCardProps {
   onRemove: (id: string) => void;
   onToggleSelect: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
+  onOcr?: (id: string) => void;
 }
 
 /**
@@ -45,6 +47,7 @@ export function ImageCard({
   onRemove,
   onToggleSelect,
   onMove,
+  onOcr,
 }: ImageCardProps) {
   const selectLabelId = useId();
 
@@ -84,6 +87,15 @@ export function ImageCard({
         <span className="absolute left-2 top-2 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
           {index + 1}
         </span>
+        {image.ocrResult && (
+          <span
+            className="absolute left-8 top-2 flex items-center gap-0.5 rounded bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur shadow-sm"
+            title={`OCR Text Extracted (${image.ocrResult.confidence}% confidence)`}
+          >
+            <FileText className="size-2.5" />
+            OCR
+          </span>
+        )}
         {image.selected && (
           <span className="absolute inset-0 bg-primary/10" aria-hidden="true" />
         )}
@@ -107,6 +119,19 @@ export function ImageCard({
           </span>
         </label>
         <div className="flex shrink-0 items-center gap-0.5">
+          {onOcr && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn("size-7", image.ocrResult && "text-emerald-600 dark:text-emerald-400")}
+              onClick={() => onOcr(image.id)}
+              aria-label={`Extract or view text for page ${index + 1}`}
+              title="Extract text / OCR notes"
+            >
+              <FileText className="size-3.5" />
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

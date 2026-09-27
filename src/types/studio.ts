@@ -1,5 +1,7 @@
 import type { ImageFilters } from "@/lib/images";
 
+import type { OcrPageResult } from "@/lib/ocr";
+
 /** One page in the workspace: the original file plus its edits. */
 export interface StudioImage {
   id: string;
@@ -17,6 +19,9 @@ export interface StudioImage {
   /** Signature of the edits the current thumbnail was rendered with. */
   thumbSignature: string;
   selected: boolean;
+  ocrResult?: OcrPageResult | null;
+  ocrStatus?: "idle" | "loading" | "done" | "error";
+  ocrProgress?: number;
 }
 
 /** Result of a successful conversion. */

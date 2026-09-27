@@ -25,8 +25,8 @@ import {
   type PdfSettings,
 } from "@/lib/pdf-meta";
 import { generatePdfFromImages } from "@/lib/pdf";
-import type { StudioImage } from "@/types/studio";
 import {
+  ArrowRightLeft,
   CheckSquare,
   Eye,
   FileDown,
@@ -52,6 +52,9 @@ import { PdfSettingsPanel } from "@/components/studio/PdfSettingsPanel";
 import { ConvertDialog } from "@/components/studio/ConvertDialog";
 import { PreviewDialog } from "@/components/studio/PreviewDialog";
 import { OcrDialog } from "@/components/studio/OcrDialog";
+import { PdfWordConverterDialog } from "@/components/studio/PdfWordConverterDialog";
+import { extractPdfPagesAsImages } from "@/lib/pdf-word";
+import type { StudioImage } from "@/types/studio";
 import type { OcrPageResult } from "@/lib/ocr";
 import type { PerspectiveQuad } from "@/lib/scanner";
 
@@ -125,6 +128,7 @@ export default function Studio() {
   const [previewPending, setPreviewPending] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
   const [ocrImageId, setOcrImageId] = useState<string | null>(null);
+  const [pdfWordOpen, setPdfWordOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const addInputRef = useRef<HTMLInputElement>(null);
   const dragIndexRef = useRef<number | null>(null);
@@ -154,13 +158,47 @@ export default function Studio() {
     }
   }, [viewMode]);
 
-  /* ----------------------------- adding images ----------------------------- */
+  /* ----------------------------- adding images & PDFs ----------------------------- */
 
   const addFiles = useCallback(async (files: File[]) => {
     setIsProcessing(true);
     const accepted: StudioImage[] = [];
     let rejected = 0;
+
     for (const file of files) {
+      // If PDF file, extract all pages as images
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        try {
+          toast.info(`Extracting pages from "${file.name}"…`);
+          const pageFiles = await extractPdfPagesAsImages(file);
+          for (const pFile of pageFiles) {
+            const el = await loadImageElement(pFile);
+            accepted.push({
+              id: makeId(),
+              file: pFile,
+              name: pFile.name,
+              sizeBytes: pFile.size,
+              width: el.naturalWidth,
+              height: el.naturalHeight,
+              rotation: 0,
+              crop: null,
+              filters: { ...NEUTRAL_FILTERS },
+              flipH: false,
+              flipV: false,
+              thumbnailUrl: createThumbnail(el),
+              thumbSignature: "",
+              selected: false,
+            });
+          }
+          continue;
+        } catch (err) {
+          console.error("PDF import error", err);
+          toast.error(`Failed to extract pages from "${file.name}".`);
+          rejected++;
+          continue;
+        }
+      }
+
       const error = validateImageFile(file);
       if (error) {
         toast.error(error);
@@ -526,6 +564,16 @@ export default function Studio() {
           <div className="flex items-center gap-1.5">
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+              onClick={() => setPdfWordOpen(true)}
+            >
+              <ArrowRightLeft className="size-3.5" />
+              PDF ⇄ Word
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="size-9 lg:hidden"
@@ -562,18 +610,27 @@ export default function Studio() {
         {/* Sidebar (desktop) */}
         <aside className="hidden lg:block">
           <div className="sticky top-20 space-y-4">
-            <div className="tape rounded-xl border bg-card p-4">
+            <div className="tape rounded-xl border bg-card p-4 space-y-2">
               <h2 className="text-sm font-semibold">Add pages</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Photos, scans or notes from this device only.
+              <p className="text-xs text-muted-foreground">
+                Photos, scans, notes, or existing PDFs.
               </p>
               <Button
                 type="button"
-                className="mt-3 w-full"
+                className="w-full"
                 onClick={() => addInputRef.current?.click()}
               >
                 <FolderOpen className="size-4" />
-                Add images
+                Add images / PDFs
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full text-xs gap-1.5"
+                onClick={() => setPdfWordOpen(true)}
+              >
+                <ArrowRightLeft className="size-3.5" />
+                PDF ⇄ Word Hub
               </Button>
             </div>
             <div className="rounded-xl border bg-card p-4">
@@ -954,7 +1011,7 @@ export default function Studio() {
       <input
         ref={addInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf,application/pdf"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -962,7 +1019,7 @@ export default function Studio() {
           e.target.value = "";
           if (files.length > 0) void addFiles(files);
         }}
-        aria-label="Add images from device"
+        aria-label="Add images or PDFs from device"
       />
 
       {/* Editor */}
@@ -996,6 +1053,13 @@ export default function Studio() {
         open={ocrOpen}
         onClose={() => setOcrOpen(false)}
         onUpdateImageOcr={handleUpdateImageOcr}
+      />
+
+      {/* PDF <-> Word Converter Dialog */}
+      <PdfWordConverterDialog
+        open={pdfWordOpen}
+        onClose={() => setPdfWordOpen(false)}
+        onImportPdfPagesToWorkspace={(files) => void addFiles(files)}
       />
 
       {isProcessing && (

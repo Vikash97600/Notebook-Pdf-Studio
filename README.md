@@ -15,8 +15,10 @@ notes, assignments, and scans looking clean.
   - *Shadow / Glare Fix*: Equalizes uneven room lighting and removes phone/hand shadows
 - **Edit each page** — rotate, flip, crop (Free/1:1/4:3/16:9/A4), brightness,
   contrast, saturation, grayscale, sharpen, blur, reset
-- **Organize pages** — drag to reorder, move up/down, duplicate, remove,
-  multi-select with bulk rotate/delete
+- **PDF ⇄ Word (.docx) Converter** — 
+  - *PDF to Word*: Extract text, headings, and formatting into editable Microsoft Word (`.docx`) files with OCR fallback for scanned PDFs
+  - *Word to PDF*: Parse `.docx` styles, tables, lists, and images into clean PDF documents
+  - *PDF Page Import*: Import any multi-page PDF directly into the Studio workspace for editing, cropping, deskewing, and reordering
 - **OCR & Text Extraction** — client-side OCR via `tesseract.js` (WASM/local), extract notes per page or batch all pages, edit extracted text, copy to clipboard, or export to Markdown (`.md`) & Text (`.txt`)
 - **Searchable PDF Generation** — embed an invisible selectable OCR text layer directly into generated PDFs for searching (`Ctrl+F`), text selection, and copy-paste in PDF readers
 - **Real PDF generation** — A4/A3/A5/Letter/Legal/Custom page sizes, portrait /
